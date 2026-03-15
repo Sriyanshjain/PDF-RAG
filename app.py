@@ -4,7 +4,10 @@ from openai import AzureOpenAI
 import chromadb
 import json
 from dotenv import load_dotenv
+from ddgs import DDGS
+from datetime import datetime
 
+today = datetime.now().strftime("%B %d, %Y")
 load_dotenv()
 
 # Your clients
@@ -59,6 +62,12 @@ def calculate(expression):
     except:
         return "Error: could not calculate"
 
+
+def web_search(query):
+    results = DDGS().text(query, max_results=3)
+    if results:
+        return "\n\n".join([f"{r['title']}: {r['body']}" for r in results])
+    return "No results found"
 # Define tools for the LLM
 tools = [
     {
@@ -94,13 +103,31 @@ tools = [
                 "required": ["expression"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": "Search the web for current information, news, or topics not in the PDF",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query"
+                    }
+                },
+                "required": ["query"]
+            }
+        }
     }
 ]
 
 # Map function names to actual functions
 tool_functions = {
     "search_pdf": search_pdf,
-    "calculate": calculate
+    "calculate": calculate,
+    "web_search": web_search
 }
 # Streamlit UI
 st.title("Chat with your PDF")
@@ -115,7 +142,7 @@ def run_agent(user_question):
     # print("---")
     
     messages = [
-        {"role": "system", "content": "You are a helpful assistant. Use tools when needed. For questions about the Bhagavadgita, Krishna, Arjuna, or the PDF content, use search_pdf. For math, use calculate. For any other type of questions say that this is not within the context of the pdf."},
+        {"role": "system", "content": f"You are a helpful assistant. Today's date is {today}. Use tools when needed. For questions about the Bhagavadgita, Krishna, Arjuna, or the PDF content, use search_pdf. For math, use calculate. For current events, news, or general knowledge not in the PDF, use web_search. When using web_search, keep queries simple and do not add specific dates."},
         {"role": "user", "content": user_question}
     ]
     
