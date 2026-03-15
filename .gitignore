@@ -1,0 +1,14 @@
+# Environment variables
+.env
+
+# Vector database
+chroma_db/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# PDFs (potentially large/private)
+*.pdf
